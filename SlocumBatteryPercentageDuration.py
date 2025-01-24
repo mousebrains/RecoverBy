@@ -30,7 +30,9 @@ set the start/end times appropriately.
 parser.add_argument("--verbose", action="store_true", help="Enable debugging messages")
 parser.add_argument("filename", type=str, nargs="+", 
                     help="Input filename(s) containing the" 
-                    + " m_present_time and m_lithium_battery_relative_charge variables")
+                    + " m_present_time and sensor variables")
+parser.add_argument("--sensor", type=str, default="m_lithium_battery_relative_charge",
+                    help="Sensor name to fit to")
 parser.add_argument("--start", type=str, help="Only use data after this UTC time.")
 parser.add_argument("--stop", type=str, help="Only use data before this UTC time.")
 parser.add_argument("--threshold", type=float, default=15,
@@ -50,14 +52,14 @@ if args.plot:
 for index in range(len(args.filename)):
     fn = args.filename[index]
     with xr.open_dataset(fn) as ds:
-        varNames = ("time", "m_lithium_battery_relative_charge")
+        varNames = ("time", args.sensor)
         for name in varNames:
             if name not in ds:
                 logging.error("time variable not present in %s", fn)
                 continue
         ds = ds.drop_vars(filter(lambda x: x not in varNames, ds))
         ds = ds.drop_duplicates("time", keep="first")
-        ds = ds.sel(time=ds.time[np.logical_not(ds.m_lithium_battery_relative_charge.isnull())])
+        ds = ds.sel(time=ds.time[np.logical_not(ds[args.sensor].isnull())])
         ds = ds.sortby("time") # here before slicing
         if args.start is not None or args.stop is not None:
             if args.start is not None:
@@ -76,7 +78,7 @@ for index in range(len(args.filename)):
 
         ds["dDays"] = (ds.time.data - ds.time.data[0]).astype(float) / 86400e9
 
-        mdl = linregress(ds.dDays, ds.m_lithium_battery_relative_charge)
+        mdl = linregress(ds.dDays, ds[args.sensor])
 
         dRecovery = (args.threshold - mdl.intercept) / mdl.slope
         tRecoverBy = ds.time[0].data + dRecovery.astype("timedelta64[D]")
@@ -91,13 +93,13 @@ for index in range(len(args.filename)):
 
         if args.plot:
             slope = -mdl.slope
-            iTit = os.path.basename(fn) + "\n% battery remaining"
+            iTit = os.path.basename(fn) + " " + args.sensor
             fitTit = f"{mdl.intercept:.1f}-{slope:.2f} * days"
             fitTit+= f"\nRecovery by {tRecoverBy}"
             ax = axs[index]
-            ax.plot(ds.time, ds.m_lithium_battery_relative_charge, "o", label=iTit)
+            ax.plot(ds.time, ds[args.sensor], "o", label=iTit)
             ax.plot(ds.time, mdl.intercept + mdl.slope * ds.dDays, "r", label=fitTit)
-            ax.set_ylabel("% of battery remaining")
+            ax.set_ylabel(args.sensor)
             ax.legend()
             ax.grid()
 
