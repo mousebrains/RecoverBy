@@ -13,7 +13,7 @@ from argparse import ArgumentParser
 import numpy as np
 import xarray as xr
 import logging
-from scipy.stats import linregress
+from scipy.stats import linregress, t
 from matplotlib import pyplot as plt
 import os
 
@@ -84,17 +84,34 @@ for index in range(len(args.filename)):
         tRecoverBy = ds.time[0].data + dRecovery.astype("timedelta64[D]")
         tRecoverBy = tRecoverBy.astype("datetime64[s]")
 
+        sigmaIntercept = mdl.intercept_stderr
+        sigmaSlope = mdl.stderr
+        sigmaRecoverBy = np.sqrt(sigmaIntercept**2 + dRecovery**2 * sigmaSlope**2)
+
+        R2 = mdl.rvalue**2
+
+        tinv = lambda p, df: abs(t.ppf(p/2, df)); # Multipler from sigma to 95% confidence
+
+        ts = tinv(0.05, ds.dDays.size - 2)
+        ciIntercept = sigmaIntercept * ts
+        ciSlope = sigmaSlope * ts
+        ciRecoverBy = sigmaRecoverBy * ts
+
         print("\n", fn)
-        print(f"Intercept: {mdl.intercept:.4f}+-{mdl.intercept_stderr:.4f}")
-        print(f"Slope:     {mdl.slope:.4f}+-{mdl.stderr:.4f}")
-        print(f"Rvalue:    {mdl.rvalue:.4f}")
-        print(f"Pvalue:    {mdl.pvalue:.4f}")
-        print(f"Recovery By: {tRecoverBy}")
+        print(f"Intercept (95%):   {mdl.intercept:.4f}+-{ciIntercept:.4f}")
+        print(f"Slope (95%):       {mdl.slope:.4f}+-{ciSlope:.4f}")
+        print(f"R-squared:         {R2:.4f}")
+        print(f"Pvalue:            {mdl.pvalue:.4f}")
+        print(f"Recovery By (95%): {tRecoverBy}+-{ciRecoverBy:.2f} (days)")
 
         if args.plot:
-            slope = -mdl.slope
+            slope = mdl.slope
             iTit = os.path.basename(fn) + " " + args.sensor
-            fitTit = f"{mdl.intercept:.1f}-{slope:.2f} * days"
+            if slope < 0:
+                slope = -slope
+                fitTit = f"{mdl.intercept:.1f}-{slope:.2f} * days"
+            else:
+                fitTit = f"{mdl.intercept:.1f}+{slope:.2f} * days"
             fitTit+= f"\nRecovery by {tRecoverBy}"
             ax = axs[index]
             ax.plot(ds.time, ds[args.sensor], "o", label=iTit)
