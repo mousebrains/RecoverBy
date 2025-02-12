@@ -98,6 +98,8 @@ for index in range(len(args.filename)):
         ciRecoverBy = sigmaRecoverBy * ts
 
         print("\n", fn)
+        print(f"Sensor:            {args.sensor}")
+        print(f"Sensor threshold:  {args.threshold}")
         print(f"Intercept (95%):   {mdl.intercept:.4f}+-{ciIntercept:.4f}")
         print(f"Slope (95%):       {mdl.slope:.4f}+-{ciSlope:.4f}")
         print(f"R-squared:         {R2:.4f}")
@@ -106,7 +108,7 @@ for index in range(len(args.filename)):
 
         if args.plot:
             slope = mdl.slope
-            iTit = os.path.basename(fn) + " " + args.sensor
+            iTit = os.path.basename(fn)
             if slope < 0:
                 slope = -slope
                 fitTit = f"{mdl.intercept:.1f}-{slope:.2f} * days"
@@ -123,6 +125,7 @@ for index in range(len(args.filename)):
 if args.plot:
     ax = axs[-1] if isinstance(axs, list) else axs
     ax.set_xlabel("Time (UTC)")
+    plt.title(f"{args.sensor} threshold {args.threshold}")
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
