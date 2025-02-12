@@ -113,7 +113,7 @@ for index in range(len(args.filename)):
             else:
                 fitTit = f"{mdl.intercept:.1f}+{slope:.2f} * days"
             fitTit+= f"\nRecovery by {tRecoverBy}"
-            ax = axs[index]
+            ax = axs[index] if isinstance(axs, list) else axs
             ax.plot(ds.time, ds[args.sensor], "o", label=iTit)
             ax.plot(ds.time, mdl.intercept + mdl.slope * ds.dDays, "r", label=fitTit)
             ax.set_ylabel(args.sensor)
@@ -121,7 +121,7 @@ for index in range(len(args.filename)):
             ax.grid()
 
 if args.plot:
-    ax = axs[-1]
+    ax = axs[-1] if isinstance(axs, list) else axs
     ax.set_xlabel("Time (UTC)")
     plt.xticks(rotation=45)
     plt.tight_layout()
