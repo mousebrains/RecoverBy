@@ -40,6 +40,7 @@ grp.add_argument("--start", type=str, help="Only use data after this UTC time.")
 parser.add_argument("--stop", type=str, help="Only use data before this UTC time.")
 parser.add_argument("--threshold", type=float, default=15,
                     help="Percentage at which recovery should happen")
+parser.add_argument("--time", type=str, default="time", help="Name of time sensor")
 parser.add_argument("--plot", action="store_true", help="Generate a plot")
 args = parser.parse_args()
 
@@ -55,15 +56,27 @@ if args.plot:
 for index in range(len(args.filename)):
     fn = args.filename[index]
     with xr.open_dataset(fn) as ds:
-        varNames = ("time", args.sensor)
+        varNames = (args.time, args.sensor)
         for name in varNames:
             if name not in ds:
-                logging.error("time variable not present in %s", fn)
-                continue
+                logging.error("%s variable not present in %s", name, fn)
+
         ds = ds.drop_vars(filter(lambda x: x not in varNames, ds))
+
+        if ds[args.time].dtype.kind == "f":
+            # Assume posixtime
+            for name in ds.dims:
+                print("DIM", name)
+                ds[name] = ds[args.time].astype("datetime64[s]")
+                if name != "time":
+                    ds = ds.rename_dims({name: "time"})
+                    ds = ds.rename({name: "time"})
+                break
+
         ds = ds.drop_duplicates("time", keep="first")
         ds = ds.sel(time=ds.time[np.logical_not(ds[args.sensor].isnull())])
         ds = ds.sortby("time") # here before slicing
+
         if args.start is not None or args.stop is not None:
             if args.start is not None:
                 stime = np.datetime64(args.start)
