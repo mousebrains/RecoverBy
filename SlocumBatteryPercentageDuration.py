@@ -33,7 +33,10 @@ parser.add_argument("filename", type=str, nargs="+",
                     + " m_present_time and sensor variables")
 parser.add_argument("--sensor", type=str, default="m_lithium_battery_relative_charge",
                     help="Sensor name to fit to")
-parser.add_argument("--start", type=str, help="Only use data after this UTC time.")
+grp = parser.add_mutually_exclusive_group()
+grp.add_argument("--ndays", type=float, help="Number of days from last date to include")
+grp.add_argument("--start", type=str, help="Only use data after this UTC time.")
+
 parser.add_argument("--stop", type=str, help="Only use data before this UTC time.")
 parser.add_argument("--threshold", type=float, default=15,
                     help="Percentage at which recovery should happen")
@@ -70,6 +73,10 @@ for index in range(len(args.filename)):
                 etime = np.datetime64(args.stop)
             else:
                 etime = ds.time[-1]
+            ds = ds.sel(time=slice(stime, etime))
+        elif args.ndays is not None:
+            etime = ds.time[-1]
+            stime = etime - np.timedelta64(int(args.ndays * 86400), "s")
             ds = ds.sel(time=slice(stime, etime))
 
         if ds.time.size == 0:
@@ -115,15 +122,18 @@ for index in range(len(args.filename)):
             else:
                 fitTit = f"{mdl.intercept:.1f}+{slope:.2f} * days"
             fitTit+= f"\nRecovery by {tRecoverBy}"
-            ax = axs[index] if isinstance(axs, list) else axs
+            ax = axs[index] if isinstance(axs, np.ndarray) else axs
+            print("pre first plot", ax, type(axs))
             ax.plot(ds.time, ds[args.sensor], "o", label=iTit)
+            print("pre second plot")
             ax.plot(ds.time, mdl.intercept + mdl.slope * ds.dDays, "r", label=fitTit)
+            print("post second plot")
             ax.set_ylabel(args.sensor)
             ax.legend()
             ax.grid()
 
 if args.plot:
-    ax = axs[-1] if isinstance(axs, list) else axs
+    ax = axs[-1] if isinstance(axs, np.ndarray) else axs
     ax.set_xlabel("Time (UTC)")
     plt.title(f"{args.sensor} threshold {args.threshold}")
     plt.xticks(rotation=45)
