@@ -66,7 +66,7 @@ for index in range(len(args.filename)):
         if ds[args.time].dtype.kind == "f":
             # Assume posixtime
             for name in ds.dims:
-                print("DIM", name)
+                logging.debug("Processing dimension: %s", name)
                 ds[name] = ds[args.time].astype("datetime64[s]")
                 if name != "time":
                     ds = ds.rename_dims({name: "time"})
@@ -110,7 +110,7 @@ for index in range(len(args.filename)):
 
         R2 = mdl.rvalue**2
 
-        tinv = lambda p, df: abs(t.ppf(p/2, df)); # Multipler from sigma to 95% confidence
+        tinv = lambda p, df: abs(t.ppf(p/2, df))  # Multiplier from sigma to 95% confidence
 
         ts = tinv(0.05, ds.dDays.size - 2)
         ciIntercept = sigmaIntercept * ts
@@ -136,11 +136,9 @@ for index in range(len(args.filename)):
                 fitTit = f"{mdl.intercept:.1f}+{slope:.2f} * days"
             fitTit+= f"\nRecovery by {tRecoverBy}"
             ax = axs[index] if isinstance(axs, np.ndarray) else axs
-            print("pre first plot", ax, type(axs))
+            logging.debug("Plotting: ax=%s, axs type=%s", ax, type(axs))
             ax.plot(ds.time, ds[args.sensor], "o", label=iTit)
-            print("pre second plot")
             ax.plot(ds.time, mdl.intercept + mdl.slope * ds.dDays, "r", label=fitTit)
-            print("post second plot")
             ax.set_ylabel(args.sensor)
             ax.legend()
             ax.grid()
