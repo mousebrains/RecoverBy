@@ -110,7 +110,9 @@ for index in range(len(args.filename)):
 
         R2 = mdl.rvalue**2
 
-        tinv = lambda p, df: abs(t.ppf(p/2, df))  # Multiplier from sigma to 95% confidence
+        def tinv(p, df):
+            """Multiplier from sigma to 95% confidence interval."""
+            return abs(t.ppf(p/2, df))
 
         ts = tinv(0.05, ds.dDays.size - 2)
         ciIntercept = sigmaIntercept * ts
