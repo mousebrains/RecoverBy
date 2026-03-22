@@ -17,10 +17,18 @@ so the slope is in days.
 
 ## Installation
 
-Install required dependencies:
+```bash
+pip install .
+```
+
+This also installs a `recover-by` console command.
+
+For development (includes ruff, mypy, pytest, pre-commit):
 
 ```bash
-pip install numpy xarray scipy matplotlib
+pip install ".[dev]"
+pre-commit install
+pre-commit install --hook-type pre-push
 ```
 
 ## Usage
@@ -28,35 +36,59 @@ pip install numpy xarray scipy matplotlib
 Basic usage:
 
 ```bash
-./SlocumBatteryPercentageDuration.py sensor_data.nc
+recover-by sensor_data.nc
 ```
 
 With plotting enabled:
 
 ```bash
-./SlocumBatteryPercentageDuration.py --plot sensor_data.nc
+recover-by --plot sensor_data.nc
+```
+
+Save plot to a file (useful on headless/remote servers):
+
+```bash
+recover-by --output recovery.png sensor_data.nc
+```
+
+Machine-readable JSON output:
+
+```bash
+recover-by --json sensor_data.nc
 ```
 
 Using only the last N days of data:
 
 ```bash
-./SlocumBatteryPercentageDuration.py --ndays 7 sensor_data.nc
+recover-by --ndays 7 sensor_data.nc
 ```
 
 Specifying a custom threshold:
 
 ```bash
-./SlocumBatteryPercentageDuration.py --threshold 10 sensor_data.nc
+recover-by --threshold 10 sensor_data.nc
+```
+
+Using a custom confidence level (default is 0.95):
+
+```bash
+recover-by --confidence 0.99 sensor_data.nc
 ```
 
 Using a specific time range:
 
 ```bash
-./SlocumBatteryPercentageDuration.py --start "2025-01-01" --stop "2025-01-15" sensor_data.nc
+recover-by --start "2025-01-01" --stop "2025-01-15" sensor_data.nc
 ```
 
 For verbose output:
 
 ```bash
-./SlocumBatteryPercentageDuration.py --verbose sensor_data.nc
+recover-by --verbose sensor_data.nc
+```
+
+The script can also be run directly:
+
+```bash
+./SlocumBatteryPercentageDuration.py sensor_data.nc
 ```

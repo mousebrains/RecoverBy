@@ -1,4 +1,4 @@
-name: "CodeQL Advanced"
+name: "CodeQL"
 
 on:
   push:
@@ -18,13 +18,6 @@ jobs:
       actions: read
       contents: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - language: python
-          build-mode: none
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -32,10 +25,10 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
+        languages: python
+        build-mode: none
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:${{matrix.language}}"
+        category: "/language:python"
